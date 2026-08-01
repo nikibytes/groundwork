@@ -1,4 +1,4 @@
-# groundwork
+# GroundWork
 
 Bootstrap a fully documented, agent-safe coding project with one command. Five minutes of questions instead of hours of writing (or forgetting to write) a PRD, architecture doc, and task tracker by hand.
 
@@ -100,4 +100,4 @@ Running the command again on a repo that already has `docs/prd.md` won't silentl
 
 ## License
 
-MIT (or your choice — update before publishing).
+MIT
