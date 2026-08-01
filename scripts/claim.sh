@@ -14,6 +14,36 @@ set -euo pipefail
 STALE_LOCK_SECONDS=7200   # 2 hours — a claim older than this is treated as abandoned
 LOCK_DIR=".agents/claims"
 
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  cat <<'EOF'
+Usage: ./claim.sh <persona> <task-item-id> <file1> [file2 ...]
+
+Atomically claims one or more files for a persona using mkdir as a POSIX-safe
+lock primitive. Claims are all-or-nothing: if any requested file is already
+locked, none are claimed and existing claims are rolled back.
+
+Arguments:
+  persona        One of: coder, qa, reviewer, architect
+  task-item-id   The task tracker item ID these files belong to
+  file1 ...      One or more file paths to claim (relative to repo root)
+
+Options:
+  --help, -h     Show this help and exit
+
+Exit codes:
+  0  All files claimed successfully
+  1  At least one file is locked by another persona (see stderr for details)
+  2  Bad usage / missing arguments
+
+Stale locks:
+  Locks older than 2 hours are treated as abandoned and auto-cleared.
+
+Example:
+  ./claim.sh coder task-001 src/auth.ts src/auth.test.ts
+EOF
+  exit 0
+fi
+
 if [ "$#" -lt 3 ]; then
   echo "Usage: $0 <persona> <task-item-id> <file1> [file2 ...]" >&2
   exit 2

@@ -1,5 +1,8 @@
 ---
 name: groundwork
+license: MIT
+metadata:
+  version: "1.0"
 description: Bootstraps a new coding project before any production code is written. Trigger this whenever the user runs /init-project, /bootstrap, /init-project help, or asks to "set up a new project", "start a new repo", "scaffold this project", "what commands does this have", or similar. Also handles add-on commands like /init-project add <module> or /init-project --team / --enterprise for teams and larger projects that need CI, code review, security, and ADR docs beyond the solo-dev core set. Interviews the user on app name, purpose, target audience, stack, database, auth, hosting, integrations, and MVP scope — remembers whether the user is a coder or non-coder across all future projects via ~/.groundwork/profile.md, batching questions for coders and proactively suggesting defaults one-at-a-time for non-coders — then generates a docs/ ecosystem plus an agent runtime config that enforces reading/updating those docs on every future change. Do NOT use this on an existing project that already has docs/prd.md — offer update mode instead.
 ---
 
@@ -9,16 +12,16 @@ One command, five questions, a minimal working scaffold — plus opt-in modules 
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `/init-project` | Fresh init, core module only (default — solo/MVP). |
-| `/init-project --team` | Core + `team` module bundle (see table below). |
-| `/init-project --enterprise` | Core + `team` + `enterprise` module bundles. |
-| `/init-project --squad` | Core + `squad` module: sets up a 4-agent dev team (coder, QA, reviewer, architect) with coordination rules, in one shot. Combinable with `--team`/`--enterprise`. |
-| `/init-project add <module>` | Adds one specific module to an already-initialized repo, no re-interview. |
-| `/init-project remove <module>` | Deletes that module's files after confirming with the user. |
-| `/init-project list-modules` | Lists all modules, what's already installed, what's not. |
-| `/init-project help [keyword]` | Lists every command in this skill with a one-line description. With a keyword, filters to commands/flags/modules whose name or description matches it. |
+| Command                         | What it does                                                                                                                                                      |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/init-project`                 | Fresh init, core module only (default — solo/MVP).                                                                                                                |
+| `/init-project --team`          | Core + `team` module bundle (see table below).                                                                                                                    |
+| `/init-project --enterprise`    | Core + `team` + `enterprise` module bundles.                                                                                                                      |
+| `/init-project --squad`         | Core + `squad` module: sets up a 4-agent dev team (coder, QA, reviewer, architect) with coordination rules, in one shot. Combinable with `--team`/`--enterprise`. |
+| `/init-project add <module>`    | Adds one specific module to an already-initialized repo, no re-interview.                                                                                         |
+| `/init-project remove <module>` | Deletes that module's files after confirming with the user.                                                                                                       |
+| `/init-project list-modules`    | Lists all modules, what's already installed, what's not.                                                                                                          |
+| `/init-project help [keyword]`  | Lists every command in this skill with a one-line description. With a keyword, filters to commands/flags/modules whose name or description matches it.            |
 
 `add`/`remove`/`list-modules` work on a repo that already has `docs/prd.md` — they don't re-run the interview, they just read the existing PRD/architecture for context and generate the new module's files.
 
@@ -26,16 +29,16 @@ One command, five questions, a minimal working scaffold — plus opt-in modules 
 
 `/init-project help` prints this table, verbatim, in chat — don't paraphrase or shorten the descriptions, the whole point is a complete, accurate reference:
 
-| Command | Description |
-|---|---|
-| `/init-project` | Start a fresh project: 10-question interview, generates the 6-file core scaffold. |
-| `/init-project --team` | Core scaffold + team collaboration files (commit conventions, PR template, CODEOWNERS, onboarding, changelog). |
-| `/init-project --enterprise` | Core + team + CI workflow, ADRs, security doc, stricter agent permissions. |
-| `/init-project --squad` | Core + a 4-persona agent team (coder/qa/reviewer/architect) with real file-locking and task dispatch. |
-| `/init-project add <module>` | Add one module to a repo that's already initialized. See module list below. |
-| `/init-project remove <module>` | Remove a module's files, with confirmation first. |
-| `/init-project list-modules` | Show which modules are installed vs. available for this repo. |
-| `/init-project help [keyword]` | Show this reference. Add a keyword (e.g. `help squad`, `help security`) to filter to matching commands and modules only. |
+| Command                         | Description                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `/init-project`                 | Start a fresh project: 10-question interview, generates the 6-file core scaffold.                                        |
+| `/init-project --team`          | Core scaffold + team collaboration files (commit conventions, PR template, CODEOWNERS, onboarding, changelog).           |
+| `/init-project --enterprise`    | Core + team + CI workflow, ADRs, security doc, stricter agent permissions.                                               |
+| `/init-project --squad`         | Core + a 4-persona agent team (coder/qa/reviewer/architect) with real file-locking and task dispatch.                    |
+| `/init-project add <module>`    | Add one module to a repo that's already initialized. See module list below.                                              |
+| `/init-project remove <module>` | Remove a module's files, with confirmation first.                                                                        |
+| `/init-project list-modules`    | Show which modules are installed vs. available for this repo.                                                            |
+| `/init-project help [keyword]`  | Show this reference. Add a keyword (e.g. `help squad`, `help security`) to filter to matching commands and modules only. |
 
 **Modules** (usable with `add`/`remove`, or bundled via the flags above): `runbook`, `commit`, `review`, `contributing`, `changelog`, `ci`, `adr`, `security`, `safety-rules`, `lint-config`, `agent-config`, `squad` — full one-line description for each is in the Modules table further down this file; `help <module-name>` should pull that specific row rather than the whole table.
 
@@ -75,8 +78,14 @@ so every future `/init-project` run (any project, any repo) uses it automaticall
 8. **APIs / integrations** — any third-party services this needs to talk to (payments, maps, email, etc.), or none for MVP?
 9. **Top 3 MVP features, in priority order** — not a full feature list; exactly the top 3 that define a shippable v1. If they give more than 3, ask them to rank and cut to 3.
 10. **Out of scope for v1** — what are you deliberately *not* building yet? If they're unsure, suggest inferring the obvious ones from what they excluded in Q9 and confirm.
+11. **Agentic squad or solo agent?** — *"Would you like a single AI agent helping you build this, or an agentic squad — multiple specialised AI agents running in parallel roles (a Coder, a QA agent, a Reviewer, and an Architect) that divide work, gate each other's output, and avoid file conflicts?"* Non-coder framing: *"Think of it like having one smart assistant vs. a small AI team where each member has a defined job and double-checks the others. More powerful, but also more moving parts — solo is simpler to start."* If they choose squad, treat this as equivalent to passing `--squad` (no separate flag needed). If unsure, default to solo and mention `/init-project add squad` at the end.
 
-Infer from existing files (package.json, README) instead of re-asking when the answer is already visible. If the command included `--team` or `--enterprise`, also confirm: team size/structure (for CODEOWNERS) and whether CI is GitHub Actions, GitLab CI, or other — otherwise default to GitHub Actions. If `--squad` is included, no extra questions needed — the 4 personas are fixed (see `squad` module below); just confirm the human wants all 4 or a subset.
+Infer from existing files (package.json, README) instead of re-asking when the answer is already visible. If the command included `--team` or `--enterprise`, also confirm: team size/structure (for CODEOWNERS) and whether CI is GitHub Actions, GitLab CI, or other — otherwise default to GitHub Actions. If `--squad` is included (via flag **or** via Q11 answer), no extra questions needed — the 4 personas are fixed (see `squad` module below); just confirm the human wants all 4 or a subset.
+
+**Post-interview branch on Q11:**
+- **Solo** → generate core module only (or core + whatever other flags were passed).
+- **Agentic squad** → automatically include the `squad` module in this run (same as `--squad`). Also suggest adding `--team` if not already requested, since an agentic squad benefits from commit conventions and a shared changelog — don't block on it, just note it.
+- **Unsure/skip** → default to solo; call out `/init-project add squad` in the Step 5 report-back.
 
 ## Core module (always generated)
 
@@ -98,20 +107,20 @@ Generate each from its `references/*.template.md` file, filling `{{placeholders}
 
 ## Modules (opt-in, `add <module>` or via `--team`/`--enterprise`)
 
-| Module | Files added | For |
-|---|---|---|
-| `runbook` | `docs/runbook.md` | Anyone deploying somewhere, not just running locally |
-| `commit` | `docs/commit.md` | Teams wanting enforced commit/branch conventions |
-| `review` | `.github/PULL_REQUEST_TEMPLATE.md`, `CODEOWNERS` | Teams doing code review |
-| `contributing` | `CONTRIBUTING.md`, `docs/onboarding.md` | Multi-person teams, new-hire ramp-up |
-| `changelog` | `docs/changelog-agent.md` | Anyone wanting an append-only audit trail of agent changes |
-| `ci` | `.github/workflows/ci.yml` | Teams — auto-run tests+lint on PR |
-| `adr` | `docs/adr/0001-record-architecture-decisions.md` | Larger projects — track *why*, not just *what* |
-| `security` | `docs/security.md` | Regulated/production projects — threat model, disclosure policy |
-| `safety-rules` | `.config/ai/safety-rules.md` | Stricter agent guardrails beyond permissions.json |
-| `lint-config` | `.config/ai/lint-rules.json` | Tool-agnostic style spec — usually redundant, ask before generating |
-| `agent-config` | `.agents/config.json` | Multiple agent personas/scopes working the same repo |
-| `squad` | `.agents/config.json` (4 personas), `.agents/coordination.md`, `.agents/claims/.gitkeep`, `scripts/claim.sh`, `scripts/release.sh`, `scripts/next_task.sh`, updates `task-tracker.md` to the machine-parseable status format | Running an actual multi-agent dev team, not just one agent |
+| Module         | Files added                                                                                                                                                                                                                  | For                                                                 |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `runbook`      | `docs/runbook.md`                                                                                                                                                                                                            | Anyone deploying somewhere, not just running locally                |
+| `commit`       | `docs/commit.md`                                                                                                                                                                                                             | Teams wanting enforced commit/branch conventions                    |
+| `review`       | `.github/PULL_REQUEST_TEMPLATE.md`, `CODEOWNERS`                                                                                                                                                                             | Teams doing code review                                             |
+| `contributing` | `CONTRIBUTING.md`, `docs/onboarding.md`                                                                                                                                                                                      | Multi-person teams, new-hire ramp-up                                |
+| `changelog`    | `docs/changelog-agent.md`                                                                                                                                                                                                    | Anyone wanting an append-only audit trail of agent changes          |
+| `ci`           | `.github/workflows/ci.yml`                                                                                                                                                                                                   | Teams — auto-run tests+lint on PR                                   |
+| `adr`          | `docs/adr/0001-record-architecture-decisions.md`                                                                                                                                                                             | Larger projects — track *why*, not just *what*                      |
+| `security`     | `docs/security.md`                                                                                                                                                                                                           | Regulated/production projects — threat model, disclosure policy     |
+| `safety-rules` | `.config/ai/safety-rules.md`                                                                                                                                                                                                 | Stricter agent guardrails beyond permissions.json                   |
+| `lint-config`  | `.config/ai/lint-rules.json`                                                                                                                                                                                                 | Tool-agnostic style spec — usually redundant, ask before generating |
+| `agent-config` | `.agents/config.json`                                                                                                                                                                                                        | Multiple agent personas/scopes working the same repo                |
+| `squad`        | `.agents/config.json` (4 personas), `.agents/coordination.md`, `.agents/claims/.gitkeep`, `scripts/claim.sh`, `scripts/release.sh`, `scripts/next_task.sh`, updates `task-tracker.md` to the machine-parseable status format | Running an actual multi-agent dev team, not just one agent          |
 
 ### Bundles
 - `--team` = `runbook` + `commit` + `review` + `contributing` + `changelog`

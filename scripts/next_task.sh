@@ -12,6 +12,40 @@
 set -euo pipefail
 TRACKER="docs/task-tracker.md"
 
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  cat <<'EOF'
+Usage: ./next_task.sh <persona>
+
+Pull-based task dispatcher. Reads docs/task-tracker.md and prints the first
+eligible unclaimed task for the given persona, based on its status field.
+Does NOT claim the task — call claim.sh separately before editing any files.
+
+Arguments:
+  persona    One of: coder, qa, reviewer, architect
+
+Options:
+  --help, -h    Show this help and exit
+
+Persona → eligible status mapping:
+  coder      Backlog
+  qa         Ready for QA
+  reviewer   Ready for Review
+  architect  Architecture Review Needed
+
+Expected task-tracker.md line format:
+  - [ ] <task text> — status: <Status> — claimed_by: <persona|none>
+
+Exit codes:
+  0  Task found and printed to stdout, OR no eligible task found (empty output)
+  1  docs/task-tracker.md not found
+  2  Bad usage / unknown persona
+
+Example:
+  ./next_task.sh coder
+EOF
+  exit 0
+fi
+
 if [ "$#" -ne 1 ]; then
   echo "Usage: $0 <coder|qa|reviewer|architect>" >&2
   exit 2
