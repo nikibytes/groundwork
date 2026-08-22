@@ -31,16 +31,19 @@ No npm publish needed — [`skills`](https://github.com/vercel-labs/agent-skills
 
 ## Project intelligence
 
-GroundWork now has a first observation layer for existing repositories. `/groundwork analyze` runs a dependency-free deterministic analyzer and writes:
+GroundWork has a first observation layer for existing repositories. `/groundwork analyze` runs a dependency-free deterministic analyzer and writes:
 
 ```
 .groundwork/
   project.json             # git, language, package-manager, framework, and manifest facts
   repo-map.json             # tracked files with basic machine-derived metadata
   dependency-graph.json     # statically resolved local import relationships
+  feature-map.json          # PRD requirements mapped to likely implementation/test files
 ```
 
-This is deliberately observation-only: it does not modify source code, does not ask an LLM to invent file descriptions, and uses Git metadata when the repository is available. It is the foundation for the next intelligence layers: intent mapping, drift detection, change impact, and intelligent task selection.
+`feature-map.json` is deliberately conservative. It parses `docs/prd.md` requirements and ranks repository files using deterministic token/path signals. A missing or weak match remains visible as `unmapped` rather than being presented as a confident semantic claim.
+
+This layer is the bridge between project intent and observed code. It is the foundation for the next intelligence layers: drift detection, change impact, and intelligent task selection.
 
 For a direct smoke test from a checked-out GroundWork source tree:
 
