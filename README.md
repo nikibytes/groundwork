@@ -29,6 +29,7 @@ No npm publish needed — [`skills`](https://github.com/vercel-labs/agent-skills
 | `/init-project help [keyword]` | Full command reference; filter with a keyword, e.g. `help squad` |
 | `/groundwork analyze` | Build a machine-readable snapshot of the existing repository |
 | `/groundwork drift` | Compare PRD intent with observed implementation/test signals |
+| `/groundwork impact <file>` | Explain likely files, requirements, and tests affected by changing a file |
 
 ## Project intelligence
 
@@ -60,13 +61,33 @@ This writes `.groundwork/drift.json` and reports deterministic findings:
 
 The command exits non-zero when drift is found, making it usable in CI. It intentionally reports signals rather than pretending to prove semantic correctness.
 
-This layer is the bridge between project intent and observed code. It is the foundation for the next intelligence layer: change impact and intelligent task selection.
+### Change impact
+
+After analyzing a repository, run:
+
+```bash
+bash scripts/impact.sh src/auth/session.py /path/to/your/repo
+```
+
+This writes `.groundwork/impact.json` and follows reverse local dependencies to identify likely affected source files. It also connects affected files back to PRD requirements and their mapped tests, then assigns a simple explainable risk score.
+
+The impact report contains:
+
+- changed file
+- affected files
+- affected requirements
+- affected tests
+- impact score (0–100)
+- risk (`low`, `medium`, or `high`)
+
+This is intentionally deterministic. It is an evidence layer for future semantic reasoning, not an LLM guessing at impact.
 
 For a direct smoke test from a checked-out GroundWork source tree:
 
 ```bash
 bash scripts/analyze.sh /path/to/your/repo
 bash scripts/drift.sh /path/to/your/repo
+bash scripts/impact.sh src/auth/session.py /path/to/your/repo
 ```
 
 ## What it asks
@@ -84,13 +105,13 @@ One short interview, then it generates everything. If you're not a coder, it exp
 ```
 docs/
   prd.md               # the source of truth for scope
-  task-tracker.md       # backlog → in progress → completed
-  architecture.md       # directory map, schemas (by reference, not duplicated)
-  testing-playbook.md   # what "done" means
+  task-tracker.md      # backlog → in progress → completed
+  architecture.md      # directory map, schemas (by reference, not duplicated)
+  testing-playbook.md  # what "done" means
 .agents/
-  permissions.json      # allowlist model — not a blacklist, those are bypassable
+  permissions.json     # allowlist model — not a blacklist, those are bypassable
 .env.template
-AGENTS.md                # the enforcement loop, injected into your agent's config
+AGENTS.md               # the enforcement loop, injected into your agent's config
 ```
 
 Deliberately small. Everything else is a module you opt into — see the table below.
