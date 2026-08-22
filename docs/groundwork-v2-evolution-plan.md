@@ -1,12 +1,10 @@
 # GroundWork v2 Evolution Plan
 
-> Working product/design artifact. This document describes the intended evolution of GroundWork from a passive scaffold generator into an intuitive engineering collaborator. It is a planning reference, not approval that every capability is already implemented.
+> Working product/design artifact. This document defines the intended evolution of GroundWork into an intuitive engineering collaborator. This branch intentionally implements only this planning artifact plus the Excel task-tracker foundation; other capabilities remain in their separate PRs and future milestones.
 
 ## Vision
 
-GroundWork should guide a user through the software-planning and engineering lifecycle, while maintaining a machine-readable model of project intent and implementation reality.
-
-The long-term workflow is:
+GroundWork should guide a user through the software-planning and engineering lifecycle rather than only generating a static document scaffold.
 
 ```text
 User idea
@@ -36,38 +34,32 @@ Tasks / milestones
 Risks / trade-offs / improvements
   ↓
 Implementation
-  ↓
-Repository intelligence
-  ↓
-Drift / impact / validation
-  ↓
-Feedback into planning
 ```
 
-The collaborator should be interactive rather than a form generator: ask only what is needed, infer safe defaults, explain trade-offs, challenge weak decisions, and make approval/state transitions explicit.
+The collaborator should be interactive: ask only what is needed, explain trade-offs, challenge weak decisions, preserve user intent, and make approval/state transitions explicit.
 
 ## Planning artifacts
 
-Where applicable, GroundWork should be able to create and maintain connected artifacts such as:
+The eventual connected planning model may include:
 
-- `docs/prd.md` — product scope and source of truth
+- `docs/prd.md` — product scope
 - `docs/personas.md` — user/persona definitions
-- `docs/user-flows.md` — primary journeys and flows
-- `docs/requirements.md` — functional/non-functional requirements
+- `docs/user-flows.md` — primary journeys
+- `docs/requirements.md` — functional and non-functional requirements
 - `docs/domain-model.md` — domain entities and relationships
-- `docs/database-schema.md` — logical/physical data design
-- `docs/api-design.md` — API contracts and behavior
-- `docs/architecture.md` — high-level system architecture
-- `docs/ai-knowledge-pipeline.md` — data/knowledge ingestion, indexing, retrieval, evaluation and observability for AI applications
-- `docs/task-tracker.xlsx` — human-facing task and milestone tracker
+- `docs/database-schema.md` — data design
+- `docs/api-design.md` — API contracts
+- `docs/architecture.md` — high-level architecture
+- `docs/ai-knowledge-pipeline.md` — AI data/knowledge pipeline where applicable
+- `docs/task-tracker.xlsx` — human-facing task tracker
 - `docs/risks.md` — risks, mitigations and trade-offs
-- ADRs — durable records of important architectural decisions
+- ADRs — important architectural decisions
 
-These should form a connected project-planning model rather than isolated generated documents.
+These should eventually form a connected planning model rather than isolated documents. Their generation, critique, locking, and downstream automation are separate future work and are **not implemented in this branch**.
 
-## Excel task tracker
+## Excel task tracker — implemented in this branch
 
-The task tracker should use Excel (`.xlsx`) as the human-facing planning and task-management interface while keeping GroundWork's internal intelligence model independent of spreadsheet formatting.
+Excel is the human-facing task-management interface. GroundWork's semantic/project state must remain independent of spreadsheet formatting.
 
 Recommended columns:
 
@@ -76,81 +68,70 @@ ID | Milestone | Task | Requirement | Status | Priority |
 Risk | Dependencies | Owner | Files | Tests | Notes
 ```
 
-The intended flow is:
+### Read / write / synchronize
 
-```text
-PRD / requirements / architecture
-            ↓
-GroundWork project intelligence
-            ↓
-task planning
-            ↓
-docs/task-tracker.xlsx
-            ↓
-human / agent updates
-            ↓
-GroundWork reads tracker again
-            ↓
-planning / impact / drift / validation
+`scripts/excel_tracker.py` provides the initial workbook boundary:
+
+```bash
+python3 scripts/excel_tracker.py write docs/task-tracker.xlsx --json tasks.json
+python3 scripts/excel_tracker.py read docs/task-tracker.xlsx
+python3 scripts/excel_tracker.py sync docs/task-tracker.xlsx --json updates.json
 ```
 
-GroundWork should provide reliable read/write support for the workbook and preserve task identity and state across updates. Excel is a user-facing view/control surface, not the canonical semantic project model. The canonical model remains the connected GroundWork project state and source artifacts.
+The synchronization model is intentionally narrow:
 
-The Excel integration should eventually support:
+```text
+GroundWork project/task state
+          ↓
+       write.xlsx
+          ↓
+Human / agent edits workbook
+          ↓
+       read.xlsx
+          ↓
+validated task records
+          ↓
+GroundWork can consume/update the task state
+```
 
-- creating an initial workbook from approved requirements/tasks
-- reading human status and ownership changes
-- writing GroundWork recommendations and derived fields
-- preserving stable task IDs
-- preserving user-entered notes where possible
-- validating required columns/status values
-- detecting conflicting or malformed spreadsheet edits
-- round-trip tests: write → read → equivalent task state
-- incremental updates rather than rewriting unrelated rows
+`sync` updates existing rows by stable `ID` and rejects unknown IDs instead of silently creating ambiguous tasks. The script preserves the declared task columns and does not attempt to become the project's semantic source of truth.
 
-## Interactive peer-review loop
+This branch does **not** wire Excel into the intelligence/planning commands from other branches. That integration remains with the corresponding task-planning PR and future work.
 
-GroundWork should not blindly accept important user artifacts.
+Excel support uses `openpyxl`; environments that use this feature must have that dependency installed.
 
-Future capability:
+## Future collaborator behavior — design only
+
+### Peer-review loop
+
+A future capability may support:
 
 ```text
 /init-project critique [artifact]
 ```
 
-For a PRD, ERD, schema, API design, or similar artifact, perform a structured review:
+For a PRD, ERD, schema, API design, or similar artifact, the review should provide:
 
-1. **PROS** — identify sound decisions and clear boundaries.
-2. **CONS** — identify gaps, bottlenecks, security concerns, edge cases, scaling constraints and ambiguity.
-3. **PROACTIVE OPTIMIZATION** — suggest 1–2 concrete improvements.
-4. **INTERACTIVE DIALOGUE** — ask a targeted decision question, such as MVP simplicity vs enterprise scale.
+1. **PROS** — sound decisions and boundaries.
+2. **CONS** — gaps, bottlenecks, security concerns, edge cases, scaling constraints and ambiguity.
+3. **PROACTIVE OPTIMIZATION** — 1–2 concrete improvements.
+4. **INTERACTIVE DIALOGUE** — a targeted trade-off choice such as MVP simplicity vs enterprise scale.
 
-The review should critique without silently rewriting or changing user intent.
+The reviewer should not silently rewrite or change user intent.
 
-## Proactive scaffolding
+### Proactive scaffolding
 
-Once a planning step is explicitly approved, GroundWork should propose and, when authorized, draft the immediate next logical artifact using the actual project context and stack.
+After an explicitly approved planning step, GroundWork should propose the next logical artifact using project context and technology choices. Examples include deriving task work from an approved PRD or drafting API contracts after an approved data model. This is design intent only in this branch.
 
-Examples:
+### State Guard
 
-- approved PRD → derive granular machine-readable tasks in `docs/task-tracker.xlsx`
-- approved domain/database schema → draft matching API contracts
-- approved architecture → identify implementation milestones and risks
-- approved AI application scope → draft the AI knowledge pipeline plan
-
-The next artifact must be proposed explicitly before it is treated as approved project state.
-
-## State Guard
-
-Approved planning artifacts need an explicit authority/version state.
-
-Future lock capability:
+A future lock operation may support:
 
 ```text
 /init-project lock <artifact-name>
 ```
 
-A possible metadata representation is:
+Possible metadata:
 
 ```yaml
 ---
@@ -161,33 +142,11 @@ authority: human_approved
 ---
 ```
 
-The exact schema is subject to implementation design.
+If a locked artifact is contradicted by a later request or downstream artifact, GroundWork should surface the conflict and require an explicit human decision. The exact lock schema and implementation are future work.
 
-When a relevant artifact is `LOCKED`, GroundWork should treat it as an authoritative constraint. If a later request, generated artifact, or implementation contradicts it, GroundWork must stop, surface the conflict, and ask the human to either version the locked artifact or change the request.
+## AI application planning — design only
 
-A lock represents human-approved project state; it is not merely an operating-system file permission. Git history remains the audit trail.
-
-## Intelligence foundation
-
-The existing repository-intelligence work is the reality-understanding half of this larger system:
-
-```text
-v0.1  Repository observation
-v0.2  Project understanding + drift
-v0.3  Change impact
-v0.4  Agent context
-v0.5  Intelligent task planning
-v0.6  Semantic reasoning
-v0.7  Architecture / ADR intelligence
-v0.8  Change validation
-v1.0  Unified intelligence
-```
-
-This foundation should remain deterministic wherever facts can be derived reliably. The existing agent's LLM should provide semantic reasoning over grounded evidence rather than becoming a second source of repository facts.
-
-## AI application planning
-
-For AI-enabled products, GroundWork should extend ordinary software planning with a knowledge/model pipeline where relevant:
+For AI-enabled products, the planning workflow should eventually cover the applicable knowledge/model pipeline:
 
 ```text
 Sources
@@ -211,7 +170,13 @@ Evaluation
 Observability / feedback
 ```
 
-The plan should identify which stages actually apply, their data contracts, quality risks, evaluation strategy, privacy/security considerations, and operational costs.
+The plan should identify applicable stages, data contracts, quality risks, evaluation, privacy/security and operational cost. This is not implemented in this branch.
+
+## Relationship to the separate intelligence PRs
+
+Repository observation, project understanding, drift, change impact, agent context, task planning, semantic reasoning, architecture intelligence, and validation are being developed in their own PRs. **This branch does not duplicate or reimplement those capabilities.**
+
+The v2 plan is the product-level direction that those capabilities will eventually support.
 
 ## Principles
 
@@ -220,29 +185,9 @@ The plan should identify which stages actually apply, their data contracts, qual
 3. Explicit human approval for authoritative state.
 4. No silent scope changes.
 5. Evidence before inference.
-6. Keep deterministic facts separate from LLM interpretation.
+6. Keep deterministic facts separate from agent/LLM interpretation.
 7. Excel is a human-facing tracker, not the canonical semantic model.
-8. MVP-aware trade-offs: simplicity, cost, time-to-market and scale should be explicit.
-9. AI-app planning must include the knowledge/evaluation pipeline when relevant.
-10. Planning artifacts should be connected and versioned.
-11. Every capability should be delivered as a complete, independently testable PR milestone.
-12. When a milestone becomes a prerequisite for later work, stop at a clearly declared test gate and require validation before continuing.
-
-## Implementation considerations
-
-- Parse project state and artifact metadata rather than relying only on file existence.
-- Preserve coder/non-coder adaptation: use business-level trade-offs for non-coders and detailed engineering analysis for technical users.
-- Prefer a canonical task model behind the Excel interface so other tooling does not depend on spreadsheet formatting.
-- Consolidate overlapping legacy task/repository mechanisms instead of creating parallel sources of truth.
-- Future lock tooling may use `scripts/lock.sh`, but metadata/state is the primary authority mechanism.
-- Critique findings should be persisted and linkable to decisions/ADRs where useful.
-- Semantic conclusions should retain evidence references and confidence, and support an explicit `insufficient evidence` result.
-
-## Open decisions
-
-- Final command namespace: keep `/init-project critique/lock` or move planning operations under `/groundwork`.
-- Exact lock metadata/version semantics.
-- Exact Excel schema and synchronization/conflict policy.
-- Canonical internal task schema and migration from the legacy Markdown tracker.
-- How planning artifacts map into `feature-map.json` and the future project knowledge graph.
-- How AI-app pipeline stages are represented for different application types.
+8. Make MVP/scale trade-offs explicit.
+9. Keep AI-app planning aware of the knowledge/evaluation pipeline.
+10. Deliver future capabilities as complete, independently testable PR milestones.
+11. Stop at explicit test gates before building dependent milestones.
