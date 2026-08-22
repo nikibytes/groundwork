@@ -11,7 +11,23 @@ This is an opt-in sub-skill of GroundWork. Do not activate it for ordinary `/ini
 
 Reduce tedious planning/documentation work while keeping the developer in control of product and architecture decisions.
 
-GroundWork should progressively turn the user's idea into implementation-ready planning artifacts, not dump a large documentation package on the user.
+GroundWork progressively turns the user's idea into implementation-ready planning artifacts. It must not dump all planning documents at once.
+
+## Activation and onboarding
+
+Repository Intelligence is always active when available in GroundWork and supplies repository facts to this workflow. It is not a reason to interrupt planning.
+
+Project Initialization and Guided Planning are default available workflows. On a fresh GroundWork installation, offer the user a simple choice of what to start with rather than forcing a planning interview.
+
+Optional Team, Enterprise and Squad capabilities are contextual recommendations only. If the user's language indicates a team, regulated/enterprise environment, or multiple specialized agents, offer the relevant capability and ask for explicit approval before activation. Never silently activate optional capabilities.
+
+Planning activation is explicit:
+
+```text
+/init-project --plan
+```
+
+Natural-language requests such as "plan this application before we code" also activate planning when GroundWork routing is available.
 
 ## Mandatory gated sequence
 
@@ -43,20 +59,38 @@ Implementation may begin
 
 Never skip ahead because a later artifact appears easy to infer. Use the approved upstream artifacts as the input to each downstream stage.
 
+## Deterministic workflow state
+
+The planning workflow must maintain `docs/planning/planning-state.yaml` and use it to resume rather than infer progress from chat history alone.
+
+Use the bundled state engine where available:
+
+```bash
+python3 skills/planning/scripts/planning_state.py init --root .
+python3 skills/planning/scripts/planning_state.py status --root .
+python3 skills/planning/scripts/planning_state.py approve <stage> --root .
+```
+
+The engine is the deterministic gatekeeper for stage ordering, approval, versioning and the final `implementation_ready` transition. The conversational agent must not claim a stage is locked unless the state transition has succeeded.
+
 ## Conversation protocol
 
 At each stage:
 
-1. Read all already-approved upstream artifacts.
-2. Ask only the questions needed to resolve ambiguity for this stage.
-3. Draft the artifact.
-4. Critique the draft: gaps, contradictions, risks, edge cases and assumptions.
-5. Present the proposed artifact and a concise decision summary.
-6. Ask explicitly: **"Approve and lock this stage, or request changes?"**
-7. Do not proceed until the user explicitly approves.
-8. On approval, mark the artifact `LOCKED`, increment its version, record approval metadata, and advance to the next stage.
+1. Read the current planning state.
+2. Confirm the current stage is the next allowed stage.
+3. Read all already-approved upstream artifacts.
+4. Ask only questions needed to resolve ambiguity for this stage.
+5. Draft or update only the current artifact.
+6. Critique the draft: gaps, contradictions, risks, edge cases and assumptions.
+7. Explicitly label provenance as **USER DECISION**, **GROUNDED INFERENCE**, **ASSUMPTION**, or **UNRESOLVED**.
+8. Present the proposed artifact and concise decision summary.
+9. Ask: **"Approve and lock this stage, or request changes?"**
+10. Do not proceed until the user explicitly approves.
+11. On approval, invoke the state engine to lock the artifact and advance.
+12. If the transition fails, report the failure and do not pretend the stage advanced.
 
-Do not silently rewrite approved decisions while generating later artifacts.
+Do not silently rewrite an approved artifact while generating later artifacts.
 
 ## Stage requirements
 
@@ -66,19 +100,19 @@ Establish objective, target users, problem, MVP boundary, important constraints,
 
 ### PRD
 
-Produce a concise product requirements document covering objective/problem, users, scope, MVP capabilities, success criteria, requirements at product level, non-goals, assumptions and constraints.
+Produce a concise product requirements document covering objective/problem, users, scope, MVP capabilities, success criteria, product-level requirements, non-goals, assumptions and constraints.
 
 ### User personas
 
-Create decision-useful personas from the approved PRD: goals, behaviors, pain points, roles/permissions where relevant, and success criteria. Avoid decorative biography.
+Create decision-useful personas from the locked PRD: goals, behaviors, pain points, roles/permissions where relevant, and success criteria. Avoid decorative biography.
 
 ### User flows
 
-Map the important MVP journeys, including happy paths, alternate paths, failure paths and state transitions. Prefer Mermaid diagrams where supported, with a textual representation as fallback.
+Map important MVP journeys, including happy paths, alternate paths, failure paths and state transitions. Prefer Mermaid diagrams where supported, with a readable textual representation as fallback.
 
 ### Requirements
 
-Convert the approved PRD and flows into traceable requirements with stable IDs and acceptance criteria. Include relevant functional, non-functional, security, data and operational requirements.
+Convert the locked PRD and flows into traceable requirements with stable IDs and acceptance criteria. Include relevant functional, non-functional, security, data and operational requirements.
 
 ### Domain model
 
@@ -94,9 +128,11 @@ Derive the logical schema from the locked domain model, requirements and data fl
 
 Do not write production application code during planning.
 
-## Artifact state
+## Artifact contract
 
-Use a planning directory in the target project:
+Use the contract in `references/artifact-contract.md`.
+
+Planning artifacts live under:
 
 ```text
  docs/planning/
@@ -111,79 +147,43 @@ Use a planning directory in the target project:
    planning-state.yaml
 ```
 
-Draft artifacts use:
+Drafts use `status: DRAFT`. Locked artifacts use `status: LOCKED`, a monotonically increasing version, `approved_by: human`, and an approval timestamp.
 
-```yaml
----
-status: DRAFT
-version: 0
----
-```
+A locked artifact is authoritative for its stage and must not be downgraded or silently edited in place by the planning workflow.
 
-Approved artifacts use:
+## Change guard and invalidation
 
-```yaml
----
-status: LOCKED
-version: 1
-approved_by: human
-approved_at: <timestamp>
----
-```
+If a locked upstream artifact needs to change, do not directly overwrite it.
 
-The exact timestamp format may follow the host environment.
+1. Explain the requested change and why it matters.
+2. Identify all downstream stages that may be affected.
+3. Ask the human to explicitly approve reopening/revising the upstream artifact.
+4. Create the next version through the approval workflow.
+5. Mark affected downstream stages `REVIEW_REQUIRED` in planning state.
+6. Re-run those stages in order and require fresh approval before implementation can become ready.
 
-## Planning state
+A downstream artifact must never remain apparently `LOCKED` and implementation-ready when its locked upstream source has changed.
 
-Maintain `docs/planning/planning-state.yaml` as workflow state:
+## Resume behavior
 
-```yaml
-planning:
-  mode: active
-  current_stage: discovery
-  implementation_ready: false
-  stages:
-    discovery: {status: draft, version: 0}
-    prd: {status: pending, version: 0}
-    personas: {status: pending, version: 0}
-    user_flows: {status: pending, version: 0}
-    requirements: {status: pending, version: 0}
-    domain_model: {status: pending, version: 0}
-    data_flow: {status: pending, version: 0}
-    database_schema: {status: pending, version: 0}
-```
+When planning is invoked on an existing project:
 
-When all stages are locked, set `implementation_ready: true` and stop planning unless the user asks for additional planning artifacts.
+- Read `docs/planning/planning-state.yaml` first.
+- If state exists, resume at `current_stage`.
+- Never restart an already locked stage unless its upstream dependency is marked for review.
+- If artifacts exist without planning state, inspect their front matter, report the ambiguity, and ask whether to initialize planning state from those artifacts. Do not silently guess.
 
-## Change guard
+## Excel task tracker handoff
 
-If a locked upstream artifact must change, stop and identify affected downstream stages. Do not silently continue with stale decisions.
+Only after all required planning stages are locked may GroundWork derive implementation tasks into `docs/task-tracker.xlsx` when the Excel tracker capability is installed.
 
-For example:
+The task tracker should use stable task IDs and retain human edits. GroundWork should update only fields it owns and must not overwrite unrelated rows or notes. Excel is a human-facing task-management interface, not the canonical semantic planning model.
 
-```text
-PRD changed
- ↓
-personas → review required
- ↓
-flows → review required
- ↓
-requirements → review required
- ↓
-domain/data/schema → review required
-```
+## Completion gate
 
-The user must explicitly approve/re-lock affected artifacts before implementation is considered ready again.
+Before saying planning is complete, verify the state engine reports every required stage as `LOCKED` and `implementation_ready: true`.
 
-## Excel handoff
-
-After the required planning stages are locked, derive implementation tasks into the human-facing `docs/task-tracker.xlsx` when the Excel tracker capability is installed.
-
-Excel is not the canonical semantic planning model. Preserve stable task IDs and user edits. Planning artifacts and planning state remain the source of truth for approved decisions.
-
-## Completion message
-
-Before implementation begins, report:
+Report:
 
 ```text
 [✓] Discovery
@@ -198,4 +198,6 @@ Before implementation begins, report:
 Planning baseline locked. Implementation may begin.
 ```
 
-Also list explicitly accepted assumptions, unresolved risks, and any items intentionally deferred.
+Also list accepted assumptions, unresolved risks and intentionally deferred items.
+
+If any stage is not locked, explicitly say implementation is **not** planning-ready.
