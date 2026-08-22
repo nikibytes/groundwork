@@ -3,7 +3,7 @@ name: groundwork
 license: MIT
 metadata:
   version: "1.0"
-description: Bootstraps a new coding project before any production code is written. Trigger this whenever the user runs /init-project, /bootstrap, /init-project help, or asks to "set up a new project", "start a new repo", "scaffold this project", "what commands does this have", or similar. Also handles add-on commands like /init-project add <module> or /init-project --team / --enterprise for teams and larger projects that need CI, code review, security, and ADR docs beyond the solo-dev core set. Interviews the user on app name, purpose, target audience, stack, database, auth, hosting, integrations, and MVP scope — remembers whether the user is a coder or non-coder across all future projects via ~/.groundwork/profile.md, batching questions for coders and proactively suggesting defaults one-at-a-time for non-coders — then generates a docs/ ecosystem plus an agent runtime config that enforces reading/updating those docs on every future change. Do NOT use this on an existing project that already has docs/prd.md — offer update mode instead.
+description: Bootstraps a new coding project before any production code is written. Trigger this whenever the user runs /init-project, /bootstrap, /init-project help, or asks to "set up a new project", "start a new repo", "scaffold this project", "what commands does this have", or similar. Also handles add-on commands like /init-project add <module> or /init-project --team / --enterprise for teams and larger projects that need CI, code review, security, and ADR docs beyond the solo-dev core set. Interviews the user on app name, purpose, target audience, stack, database, auth, hosting, integrations, and MVP scope — remembers whether the user is a coder or non-coder across all future projects via ~/.groundwork/profile.md, batching questions for coders and proactively suggesting defaults one-at-a-time for non-coders — then generates a docs/ ecosystem plus an agent runtime config that enforces reading/updating those docs on every future change. Use the opt-in `--plan` mode when the user explicitly wants GroundWork to plan the application before implementation. Do NOT use the normal init flow on an existing project that already has docs/prd.md — offer update mode instead.
 ---
 
 # Project Init
@@ -15,6 +15,7 @@ One command, five questions, a minimal working scaffold — plus opt-in modules 
 | Command                         | What it does                                                                                                                                                      |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/init-project`                 | Fresh init, core module only (default — solo/MVP).                                                                                                                |
+| `/init-project --plan`          | Opt-in gated application-planning workflow: discovery → PRD → personas → user flows → requirements → domain model → data flow → database schema, with explicit user approval and locking at every stage. |
 | `/init-project --team`          | Core + `team` module bundle (see table below).                                                                                                                    |
 | `/init-project --enterprise`    | Core + `team` + `enterprise` module bundles.                                                                                                                      |
 | `/init-project --squad`         | Core + `squad` module: sets up a 4-agent dev team (coder, QA, reviewer, architect) with coordination rules, in one shot. Combinable with `--team`/`--enterprise`. |
@@ -32,12 +33,13 @@ One command, five questions, a minimal working scaffold — plus opt-in modules 
 | Command                         | Description                                                                                                              |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `/init-project`                 | Start a fresh project: 10-question interview, generates the 6-file core scaffold.                                        |
+| `/init-project --plan`          | Plan the application interactively before implementation. GroundWork gates discovery, PRD, personas, user flows, requirements, domain model, data flow and database schema; each stage requires explicit human approval before it is locked and the next stage begins. |
 | `/init-project --team`          | Core scaffold + team collaboration files (commit conventions, PR template, CODEOWNERS, onboarding, changelog).           |
 | `/init-project --enterprise`    | Core + team + CI workflow, ADRs, security doc, stricter agent permissions.                                               |
 | `/init-project --squad`         | Core + a 4-persona agent team (coder/qa/reviewer/architect) with real file-locking and task dispatch.                    |
 | `/init-project add <module>`    | Add one module to a repo that's already initialized. See module list below.                                              |
 | `/init-project remove <module>` | Remove a module's files, with confirmation first.                                                                        |
-| `/init-project list-modules`    | Show which modules are installed vs. available for this repo.                                                            |
+| `/init-project list-modules`    | Show which modules are installed vs. available for this repo.                                                           |
 | `/init-project help [keyword]`  | Show this reference. Add a keyword (e.g. `help squad`, `help security`) to filter to matching commands and modules only. |
 
 **Modules** (usable with `add`/`remove`, or bundled via the flags above): `runbook`, `commit`, `review`, `contributing`, `changelog`, `ci`, `adr`, `security`, `safety-rules`, `lint-config`, `agent-config`, `squad` — full one-line description for each is in the Modules table further down this file; `help <module-name>` should pull that specific row rather than the whole table.
@@ -51,6 +53,7 @@ Check if `docs/prd.md` exists.
 - **Present** and command is `/init-project` (no flags) → this is likely an `add`/`list-modules` intent; ask which module, don't re-run the interview.
 - Any command starting with `help` bypasses this check entirely — `help` never touches the repo or the interview, answer it immediately regardless of whether `docs/prd.md` exists.
 - **Present** and user explicitly wants to redo everything → confirm before overwriting.
+- **`--plan`** → run the gated planning workflow defined in `references/planning-skill.md`; do not run the normal one-shot interview/scaffold sequence instead. If the planning workflow completes, the planning artifacts may be used to populate the normal project scaffold and task tracker.
 
 ## Step 1 — Interview
 
@@ -170,6 +173,7 @@ Read existing docs, diff against current repo state, propose specific edits. Nev
 
 ## Reference files
 
+- `references/planning-skill.md` — opt-in gated planning workflow and stage/approval contract
 - `references/prd.template.md`, `architecture.template.md`, `task-tracker.template.md`, `testing-playbook.template.md`, `permissions.template.md`, `enforcement-block.template.md` — core
 - `references/runbook.template.md`, `commit.template.md`, `pr-template.template.md`, `codeowners.template.md`, `contributing.template.md`, `onboarding.template.md`, `changelog.template.md` — team module
 - `references/ci.template.md`, `adr.template.md`, `security.template.md`, `safety-rules.template.md`, `agent-config.template.md` — enterprise module
