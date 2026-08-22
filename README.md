@@ -31,6 +31,7 @@ No npm publish needed — [`skills`](https://github.com/vercel-labs/agent-skills
 | `/groundwork drift` | Compare PRD intent with observed implementation/test signals |
 | `/groundwork impact <file>` | Explain likely files, requirements, and tests affected by changing a file |
 | `/groundwork context <request>` | Build a compact evidence-backed context package for an engineering request |
+| `/groundwork plan` | Rank eligible tasks using requirements, drift, and project signals |
 
 ## Project intelligence
 
@@ -39,9 +40,9 @@ GroundWork has a first observation layer for existing repositories. `/groundwork
 ```
 .groundwork/
   project.json             # git, language, package-manager, framework, and manifest facts
-  repo-map.json             # tracked files with basic machine-derived metadata
-  dependency-graph.json     # statically resolved local import relationships
-  feature-map.json          # PRD requirements mapped to likely implementation/test files
+  repo-map.json            # tracked files with basic machine-derived metadata
+  dependency-graph.json    # statically resolved local import relationships
+  feature-map.json         # PRD requirements mapped to likely implementation/test files
 ```
 
 `feature-map.json` is deliberately conservative. It parses `docs/prd.md` requirements and ranks repository files using deterministic token/path signals. A missing or weak match remains visible as `unmapped` rather than being presented as a confident semantic claim.
@@ -72,37 +73,27 @@ bash scripts/impact.sh src/auth/session.py /path/to/your/repo
 
 This writes `.groundwork/impact.json` and follows reverse local dependencies to identify likely affected source files. It also connects affected files back to PRD requirements and their mapped tests, then assigns a simple explainable risk score.
 
-The impact report contains:
-
-- changed file
-- affected files
-- affected requirements
-- affected tests
-- impact score (0–100)
-- risk (`low`, `medium`, or `high`)
-
-This is intentionally deterministic. It is an evidence layer for future semantic reasoning, not an LLM guessing at impact.
-
 ### Agent context
 
-After `analyze`, run:
+After analyzing a repository, run:
 
 ```bash
 bash scripts/context.sh "fix the login authentication bug" /path/to/your/repo
 ```
 
-This writes `.groundwork/context.json`. It ranks repository paths and PRD requirements using deterministic request tokens, then enriches the result with implementation/test candidates already established by the feature map and relevant drift findings.
+This writes `.groundwork/context.json` and retrieves candidate requirements, implementation files, tests, and relevant drift findings using deterministic token/path matching. The output is explicitly candidate context; it is intended to be consumed by the existing agent/LLM rather than replacing it.
 
-The context package contains:
+### Intelligent task planning
 
-- project facts
-- relevant PRD requirements
-- candidate files
-- candidate tests
-- relevant drift findings
-- the selection method and confidence state
+After analyzing a repository and its task tracker, run:
 
-The result is explicitly marked `candidate_context`: this command does not claim semantic understanding and does not use an LLM yet. It is the evidence-backed retrieval layer that a future semantic/LLM context generator can consume.
+```bash
+bash scripts/planning.sh /path/to/your/repo
+```
+
+This writes `.groundwork/planning.json` and ranks incomplete tasks using PRD matches and known drift. Missing requirements and untested requirements receive higher priority, while blocked tasks are excluded from recommendation. The score is explainable and deterministic.
+
+This is the first planning layer: GroundWork recommends what to work on using project evidence, while the agent remains responsible for understanding the task and executing it.
 
 For a direct smoke test from a checked-out GroundWork source tree:
 
@@ -111,6 +102,7 @@ bash scripts/analyze.sh /path/to/your/repo
 bash scripts/drift.sh /path/to/your/repo
 bash scripts/impact.sh src/auth/session.py /path/to/your/repo
 bash scripts/context.sh "fix the login authentication bug" /path/to/your/repo
+bash scripts/planning.sh /path/to/your/repo
 ```
 
 ## What it asks
@@ -132,9 +124,9 @@ docs/
   architecture.md      # directory map, schemas (by reference, not duplicated)
   testing-playbook.md  # what "done" means
 .agents/
-  permissions.json      # allowlist model — not a blacklist, those are bypassable
+  permissions.json     # allowlist model — not a blacklist, those are bypassable
 .env.template
-AGENTS.md                # the enforcement loop, injected into your agent's config
+AGENTS.md               # the enforcement loop, injected into your agent's config
 ```
 
 Deliberately small. Everything else is a module you opt into — see the table below.
