@@ -30,6 +30,7 @@ No npm publish needed — [`skills`](https://github.com/vercel-labs/agent-skills
 | `/groundwork analyze` | Build a machine-readable snapshot of the existing repository |
 | `/groundwork drift` | Compare PRD intent with observed implementation/test signals |
 | `/groundwork impact <file>` | Explain likely files, requirements, and tests affected by changing a file |
+| `/groundwork context <request>` | Build a compact evidence-backed context package for an engineering request |
 
 ## Project intelligence
 
@@ -82,12 +83,34 @@ The impact report contains:
 
 This is intentionally deterministic. It is an evidence layer for future semantic reasoning, not an LLM guessing at impact.
 
+### Agent context
+
+After `analyze`, run:
+
+```bash
+bash scripts/context.sh "fix the login authentication bug" /path/to/your/repo
+```
+
+This writes `.groundwork/context.json`. It ranks repository paths and PRD requirements using deterministic request tokens, then enriches the result with implementation/test candidates already established by the feature map and relevant drift findings.
+
+The context package contains:
+
+- project facts
+- relevant PRD requirements
+- candidate files
+- candidate tests
+- relevant drift findings
+- the selection method and confidence state
+
+The result is explicitly marked `candidate_context`: this command does not claim semantic understanding and does not use an LLM yet. It is the evidence-backed retrieval layer that a future semantic/LLM context generator can consume.
+
 For a direct smoke test from a checked-out GroundWork source tree:
 
 ```bash
 bash scripts/analyze.sh /path/to/your/repo
 bash scripts/drift.sh /path/to/your/repo
 bash scripts/impact.sh src/auth/session.py /path/to/your/repo
+bash scripts/context.sh "fix the login authentication bug" /path/to/your/repo
 ```
 
 ## What it asks
@@ -109,9 +132,9 @@ docs/
   architecture.md      # directory map, schemas (by reference, not duplicated)
   testing-playbook.md  # what "done" means
 .agents/
-  permissions.json     # allowlist model — not a blacklist, those are bypassable
+  permissions.json      # allowlist model — not a blacklist, those are bypassable
 .env.template
-AGENTS.md               # the enforcement loop, injected into your agent's config
+AGENTS.md                # the enforcement loop, injected into your agent's config
 ```
 
 Deliberately small. Everything else is a module you opt into — see the table below.
