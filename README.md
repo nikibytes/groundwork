@@ -27,6 +27,26 @@ No npm publish needed — [`skills`](https://github.com/vercel-labs/agent-skills
 | `/init-project add <module>` | Add one module to an already-initialized repo |
 | `/init-project list-modules` | See what's installed, what's not |
 | `/init-project help [keyword]` | Full command reference; filter with a keyword, e.g. `help squad` |
+| `/groundwork analyze` | Build a machine-readable snapshot of the existing repository |
+
+## Project intelligence
+
+GroundWork now has a first observation layer for existing repositories. `/groundwork analyze` runs a dependency-free deterministic analyzer and writes:
+
+```
+.groundwork/
+  project.json             # git, language, package-manager, framework, and manifest facts
+  repo-map.json             # tracked files with basic machine-derived metadata
+  dependency-graph.json     # statically resolved local import relationships
+```
+
+This is deliberately observation-only: it does not modify source code, does not ask an LLM to invent file descriptions, and uses Git metadata when the repository is available. It is the foundation for the next intelligence layers: intent mapping, drift detection, change impact, and intelligent task selection.
+
+For a direct smoke test from a checked-out GroundWork source tree:
+
+```bash
+bash scripts/analyze.sh /path/to/your/repo
+```
 
 ## What it asks
 
