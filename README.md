@@ -27,6 +27,47 @@ No npm publish needed — [`skills`](https://github.com/vercel-labs/agent-skills
 | `/init-project add <module>` | Add one module to an already-initialized repo |
 | `/init-project list-modules` | See what's installed, what's not |
 | `/init-project help [keyword]` | Full command reference; filter with a keyword, e.g. `help squad` |
+| `/groundwork analyze` | Build a machine-readable snapshot of the existing repository |
+| `/groundwork drift` | Compare PRD intent with observed implementation/test signals |
+
+## Project intelligence
+
+GroundWork has a first observation layer for existing repositories. `/groundwork analyze` runs a dependency-free deterministic analyzer and writes:
+
+```
+.groundwork/
+  project.json             # git, language, package-manager, framework, and manifest facts
+  repo-map.json             # tracked files with basic machine-derived metadata
+  dependency-graph.json     # statically resolved local import relationships
+  feature-map.json          # PRD requirements mapped to likely implementation/test files
+```
+
+`feature-map.json` is deliberately conservative. It parses `docs/prd.md` requirements and ranks repository files using deterministic token/path signals. A missing or weak match remains visible as `unmapped` rather than being presented as a confident semantic claim.
+
+### Drift detection
+
+After analyzing a repository, run:
+
+```bash
+bash scripts/drift.sh /path/to/your/repo
+```
+
+This writes `.groundwork/drift.json` and reports deterministic findings:
+
+- `MISSING` — a PRD requirement has no mapped implementation candidate
+- `UNTESTED` — implementation candidates exist but no test candidate was mapped
+- `ORPHANED` — a source file has no detected local import relationships
+
+The command exits non-zero when drift is found, making it usable in CI. It intentionally reports signals rather than pretending to prove semantic correctness.
+
+This layer is the bridge between project intent and observed code. It is the foundation for the next intelligence layer: change impact and intelligent task selection.
+
+For a direct smoke test from a checked-out GroundWork source tree:
+
+```bash
+bash scripts/analyze.sh /path/to/your/repo
+bash scripts/drift.sh /path/to/your/repo
+```
 
 ## What it asks
 
